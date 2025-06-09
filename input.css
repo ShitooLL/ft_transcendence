@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+.radial-blue
+{
+    background: radial-gradient(lightyellow, lightblue);
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(rgb(215, 227, 241), rgb(12, 7, 20));
+  font-family: Arial, sans-serif;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+}
+
+canvas {
+  border: 4px solid white;
+  background: black;
+}
