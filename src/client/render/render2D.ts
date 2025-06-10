@@ -62,6 +62,8 @@ export function getPongScreen(app: HTMLElement): HTMLElement
         msg_box(container, `you connected to socket with id: ${socket.id}`);
     });
 
+    socket.emit("handlekeyDown", )
+
 
 
 
@@ -112,9 +114,18 @@ export function getPongScreen(app: HTMLElement): HTMLElement
       
         const game: PongGame = new PongGame(name1, name2);
         const renderer: CanvasRenderer = new CanvasRenderer(canvas, game);
+        
+        function handleKeyEvent(event: KeyboardEvent): void
+        {
+            const key = event.key;
 
-        document.addEventListener('keydown', (e) => game.handleKeyDown(e.key));
-        document.addEventListener('keyup', (e) => game.handleKeyUp(e.key));
+            if (key === 'w' || key === 's'
+                || key === 'ArrowUp' || key === 'ArrowDown')
+                socket.emit('handleKeyEvent', key, event.type);
+        }
+
+        document.addEventListener('keydown', handleKeyEvent);
+        document.addEventListener('keyup', handleKeyEvent);
 
         let lastTime: number = 0;
         const targetFPS: number = 60;
@@ -132,6 +143,8 @@ export function getPongScreen(app: HTMLElement): HTMLElement
 
             if (game.ended)
             {
+                document.removeEventListener('keydown', handleKeyEvent);
+                document.removeEventListener('keyup', handleKeyEvent);
                 app.innerHTML = '';
                 app.appendChild(getPongScreen(app));
             }

@@ -60,7 +60,16 @@ export class PongGame {
         }
         return false;
     }
-    handleKeyDown(key) {
+    /*     handleKeyEvent(event: KeyboardEvent): void
+        {
+            const key = event.key;
+    
+            if (key === 'w' || key === 's'
+                || key === 'ArrowUp' || key === 'ArrowDown')
+                this.socket.emit('handleKeyEvent', key, event.type);
+        } */
+    handleKeyDown(event) {
+        const key = event.key;
         if (key === 'w')
             this.player1.direction = -1;
         if (key === 's')
@@ -69,12 +78,15 @@ export class PongGame {
             this.player2.direction = -1;
         if (key === 'ArrowDown')
             this.player2.direction = 1;
+        console.log("down pressed\n");
     }
-    handleKeyUp(key) {
+    handleKeyUp(event) {
+        const key = event.key;
         if (['w', 's'].indexOf(key) !== -1)
             this.player1.direction = 0;
         if (['ArrowUp', 'ArrowDown'].indexOf(key) !== -1)
             this.player2.direction = 0;
+        console.log("up pressed\n");
     }
     checkEnd() {
         if (this.score1 > 2 || this.score2 > 2)

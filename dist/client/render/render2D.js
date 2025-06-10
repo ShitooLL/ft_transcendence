@@ -40,6 +40,7 @@ export function getPongScreen(app) {
     socket.on("connect", () => {
         msg_box(container, `you connected to socket with id: ${socket.id}`);
     });
+    socket.emit("handlekeyDown");
     const form = document.createElement('form');
     form.className = 'flex gap-4 justify-center items-center max-w-md max-h-md text-black';
     const input1 = document.createElement('input');
@@ -76,8 +77,14 @@ export function getPongScreen(app) {
         form.classList.add('hidden');
         const game = new PongGame(name1, name2);
         const renderer = new CanvasRenderer(canvas, game);
-        document.addEventListener('keydown', (e) => game.handleKeyDown(e.key));
-        document.addEventListener('keyup', (e) => game.handleKeyUp(e.key));
+        function handleKeyEvent(event) {
+            const key = event.key;
+            if (key === 'w' || key === 's'
+                || key === 'ArrowUp' || key === 'ArrowDown')
+                socket.emit('handleKeyEvent', key, event.type);
+        }
+        document.addEventListener('keydown', handleKeyEvent);
+        document.addEventListener('keyup', handleKeyEvent);
         let lastTime = 0;
         const targetFPS = 60;
         const frameDelay = 1000 / targetFPS;
@@ -89,6 +96,8 @@ export function getPongScreen(app) {
                 renderer.render();
             }
             if (game.ended) {
+                document.removeEventListener('keydown', handleKeyEvent);
+                document.removeEventListener('keyup', handleKeyEvent);
                 app.innerHTML = '';
                 app.appendChild(getPongScreen(app));
             }
