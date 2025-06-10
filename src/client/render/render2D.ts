@@ -1,4 +1,5 @@
 import { PongGame } from '../game/pong.js'
+import io from 'https://cdn.socket.io/4.8.1/socket.io.esm.min.js'
 
 class CanvasRenderer {
 
@@ -42,6 +43,28 @@ export function getPongScreen(app: HTMLElement): HTMLElement
     const container: HTMLDivElement = document.createElement('div');
     container.className = 'flex gap-6 p-4 justify-center items-start w-full h-full';
 
+
+
+
+
+
+    const socket = io('http://localhost:8080');
+
+    function msg_box(container: HTMLDivElement, message: string)
+    {
+        console.log(message);
+        const div: HTMLDivElement = document.createElement('div');
+        div.textContent = message;
+        container.appendChild(div);
+    };
+
+    socket.on("connect", () => {
+        msg_box(container, `you connected to socket with id: ${socket.id}`);
+    });
+
+
+
+
     const form: HTMLFormElement = document.createElement('form');
     form.className = 'flex gap-4 justify-center items-center max-w-md max-h-md text-black';
 
@@ -61,7 +84,7 @@ export function getPongScreen(app: HTMLElement): HTMLElement
     startBtn.className = 'bg-white px-6 py-2 rounded font-semibold hover:bg-gray-300';
 
     form.append(input1, input2, startBtn);
-    container.append(form);
+    container.appendChild(form);
 
     const canvas: HTMLCanvasElement = document.createElement('canvas');
     canvas.id = 'gameCanvas';

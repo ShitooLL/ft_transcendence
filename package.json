@@ -4,7 +4,7 @@
   "main": "dist/server/main.js",
   "scripts": {
     "start": "tsc --watch",
-    "startdev": "nodemon ./dist/",
+    "startdev": "nodemon ./dist/server/server.js",
     "buildcss": "npx tailwindcss -i input.css -o output.css --watch"
   },
   "type": "module",
@@ -14,8 +14,15 @@
   "description": "",
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.8",
+    "@types/node": "^22.15.30",
     "nodemon": "^3.1.10",
     "tailwindcss": "^4.1.8",
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@types/socket.io": "^3.0.1",
+    "@types/socket.io-client": "^1.4.36",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
   }
 }
