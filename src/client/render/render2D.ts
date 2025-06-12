@@ -1,15 +1,13 @@
-import { PongGame } from '../game/pong.js'
+import { GameState } from '../../server/game/pong.js'
 import io from 'https://cdn.socket.io/4.8.1/socket.io.esm.min.js'
 
 class CanvasRenderer {
 
     private ctx: CanvasRenderingContext2D;
     private canvas: HTMLCanvasElement;
-    private game: PongGame;
 
-    constructor( canvas: HTMLCanvasElement, game: PongGame) {
+    constructor( canvas: HTMLCanvasElement) {
         this.canvas = canvas;
-        this.game = game;
         const context: CanvasRenderingContext2D | null = this.canvas.getContext('2d');
 
         if (!context)
@@ -17,23 +15,20 @@ class CanvasRenderer {
         this.ctx = context;
     };
 
-    render(): void
+    render(game: GameState): void
     {    
-        const game: PongGame = this.game;
-        const ctx: CanvasRenderingContext2D = this.ctx;
+        this.ctx.clearRect(0, 0, 800, 600);
 
-        ctx.clearRect(0, 0, 800, 600);
+        this.ctx.fillStyle = 'white';
+        this.ctx.beginPath();
+        this.ctx.arc(game.ball.x, game.ball.y, game.ball.radius, 0, Math.PI * 2);
+        this.ctx.fill();
 
-        ctx.fillStyle = 'white';
-        ctx.beginPath();
-        ctx.arc(game.ball.x, game.ball.y, game.ball.radius, 0, Math.PI * 2);
-        ctx.fill();
+        this.ctx.fillRect(game.player1.x, game.player1.y, game.player1.width, game.player1.height);
+        this.ctx.fillRect(game.player2.x, game.player2.y, game.player2.width, game.player2.height);
 
-        ctx.fillRect(game.player1.x, game.player1.y, game.player1.width, game.player1.height);
-        ctx.fillRect(game.player2.x, game.player2.y, game.player2.width, game.player2.height);
-
-        ctx.font = '28px sans-serif';
-        ctx.fillText(`${game.score1} - ${game.score2}`, 380, 50);
+        this.ctx.font = '28px sans-serif';
+        this.ctx.fillText(`${game.player1.score} - ${game.player2.score}`, 380, 50);
     };
 }
 
@@ -43,13 +38,7 @@ export function getPongScreen(app: HTMLElement): HTMLElement
     const container: HTMLDivElement = document.createElement('div');
     container.className = 'flex gap-6 p-4 justify-center items-start w-full h-full';
 
-
-
-
-
-
-    const socket = io('http://localhost:8080');
-
+    const socket = io('http://localhost:3001');
     function msg_box(container: HTMLDivElement, message: string)
     {
         console.log(message);
@@ -61,11 +50,6 @@ export function getPongScreen(app: HTMLElement): HTMLElement
     socket.on("connect", () => {
         msg_box(container, `you connected to socket with id: ${socket.id}`);
     });
-
-    socket.emit("handlekeyDown", )
-
-
-
 
     const form: HTMLFormElement = document.createElement('form');
     form.className = 'flex gap-4 justify-center items-center max-w-md max-h-md text-black';
@@ -111,9 +95,14 @@ export function getPongScreen(app: HTMLElement): HTMLElement
         //Launching game
         canvas.classList.remove('hidden');
         form.classList.add('hidden');
-      
-        const game: PongGame = new PongGame(name1, name2);
-        const renderer: CanvasRenderer = new CanvasRenderer(canvas, game);
+
+        socket.emit('playersNameInput', name1, name2);
+
+        const renderer: CanvasRenderer = new CanvasRenderer(canvas);
+         
+        socket.on('gameState', (gameState: GameState) => {
+            renderer.render(gameState);
+        });
         
         function handleKeyEvent(event: KeyboardEvent): void
         {
@@ -121,38 +110,20 @@ export function getPongScreen(app: HTMLElement): HTMLElement
 
             if (key === 'w' || key === 's'
                 || key === 'ArrowUp' || key === 'ArrowDown')
+            {
+                console.log("socket emit in key");
                 socket.emit('handleKeyEvent', key, event.type);
+            }
         }
-
         document.addEventListener('keydown', handleKeyEvent);
         document.addEventListener('keyup', handleKeyEvent);
 
-        let lastTime: number = 0;
-        const targetFPS: number = 60;
-        const frameDelay: number = 1000 / targetFPS;
-
-        function gameLoop(currentTime: number)
-        {
-            const deltaTime: number = currentTime - lastTime;
-            if (deltaTime >= frameDelay)
-            {
-                lastTime = currentTime;
-                game.update();
-                renderer.render();
-            }
-
-            if (game.ended)
-            {
-                document.removeEventListener('keydown', handleKeyEvent);
-                document.removeEventListener('keyup', handleKeyEvent);
-                app.innerHTML = '';
-                app.appendChild(getPongScreen(app));
-            }
-            else
-                requestAnimationFrame(gameLoop);
-        }
-
-        requestAnimationFrame(gameLoop);
+        socket.on('gameOver', () => {
+            document.removeEventListener('keydown', handleKeyEvent);
+            document.removeEventListener('keyup', handleKeyEvent);
+            app.innerHTML = '';
+            app.appendChild(getPongScreen(app));
+        });
     });
 
     return (container);

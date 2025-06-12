@@ -1,27 +1,23 @@
-import { PongGame } from '../game/pong.js';
 import io from 'https://cdn.socket.io/4.8.1/socket.io.esm.min.js';
 class CanvasRenderer {
-    constructor(canvas, game) {
+    constructor(canvas) {
         this.canvas = canvas;
-        this.game = game;
         const context = this.canvas.getContext('2d');
         if (!context)
             throw new Error('Context error');
         this.ctx = context;
     }
     ;
-    render() {
-        const game = this.game;
-        const ctx = this.ctx;
-        ctx.clearRect(0, 0, 800, 600);
-        ctx.fillStyle = 'white';
-        ctx.beginPath();
-        ctx.arc(game.ball.x, game.ball.y, game.ball.radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillRect(game.player1.x, game.player1.y, game.player1.width, game.player1.height);
-        ctx.fillRect(game.player2.x, game.player2.y, game.player2.width, game.player2.height);
-        ctx.font = '28px sans-serif';
-        ctx.fillText(`${game.score1} - ${game.score2}`, 380, 50);
+    render(game) {
+        this.ctx.clearRect(0, 0, 800, 600);
+        this.ctx.fillStyle = 'white';
+        this.ctx.beginPath();
+        this.ctx.arc(game.ball.x, game.ball.y, game.ball.radius, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.fillRect(game.player1.x, game.player1.y, game.player1.width, game.player1.height);
+        this.ctx.fillRect(game.player2.x, game.player2.y, game.player2.width, game.player2.height);
+        this.ctx.font = '28px sans-serif';
+        this.ctx.fillText(`${game.player1.score} - ${game.player2.score}`, 380, 50);
     }
     ;
 }
@@ -29,7 +25,7 @@ export function getPongScreen(app) {
     console.log('Pvp screen load');
     const container = document.createElement('div');
     container.className = 'flex gap-6 p-4 justify-center items-start w-full h-full';
-    const socket = io('http://localhost:8080');
+    const socket = io('http://localhost:3001');
     function msg_box(container, message) {
         console.log(message);
         const div = document.createElement('div');
@@ -40,7 +36,6 @@ export function getPongScreen(app) {
     socket.on("connect", () => {
         msg_box(container, `you connected to socket with id: ${socket.id}`);
     });
-    socket.emit("handlekeyDown");
     const form = document.createElement('form');
     form.className = 'flex gap-4 justify-center items-center max-w-md max-h-md text-black';
     const input1 = document.createElement('input');
@@ -75,36 +70,27 @@ export function getPongScreen(app) {
         //Launching game
         canvas.classList.remove('hidden');
         form.classList.add('hidden');
-        const game = new PongGame(name1, name2);
-        const renderer = new CanvasRenderer(canvas, game);
+        socket.emit('playersNameInput', name1, name2);
+        const renderer = new CanvasRenderer(canvas);
+        socket.on('gameState', (gameState) => {
+            renderer.render(gameState);
+        });
         function handleKeyEvent(event) {
             const key = event.key;
             if (key === 'w' || key === 's'
-                || key === 'ArrowUp' || key === 'ArrowDown')
+                || key === 'ArrowUp' || key === 'ArrowDown') {
+                console.log("socket emit in key");
                 socket.emit('handleKeyEvent', key, event.type);
+            }
         }
         document.addEventListener('keydown', handleKeyEvent);
         document.addEventListener('keyup', handleKeyEvent);
-        let lastTime = 0;
-        const targetFPS = 60;
-        const frameDelay = 1000 / targetFPS;
-        function gameLoop(currentTime) {
-            const deltaTime = currentTime - lastTime;
-            if (deltaTime >= frameDelay) {
-                lastTime = currentTime;
-                game.update();
-                renderer.render();
-            }
-            if (game.ended) {
-                document.removeEventListener('keydown', handleKeyEvent);
-                document.removeEventListener('keyup', handleKeyEvent);
-                app.innerHTML = '';
-                app.appendChild(getPongScreen(app));
-            }
-            else
-                requestAnimationFrame(gameLoop);
-        }
-        requestAnimationFrame(gameLoop);
+        socket.on('gameOver', () => {
+            document.removeEventListener('keydown', handleKeyEvent);
+            document.removeEventListener('keyup', handleKeyEvent);
+            app.innerHTML = '';
+            app.appendChild(getPongScreen(app));
+        });
     });
     return (container);
 }

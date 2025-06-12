@@ -1,5 +1,5 @@
 export class Player {
-    constructor(x, y, name) {
+    constructor(x, y) {
         this.name = '';
         this.x = 0;
         this.y = 0;
@@ -9,7 +9,6 @@ export class Player {
         this.direction = 0; // -1 for up, 1 for down, 0 for stationary
         this.x = x;
         this.y = y;
-        this.name = name;
     }
     update(canvasHeight) {
         this.y += this.direction * this.speed;

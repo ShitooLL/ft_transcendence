@@ -1,24 +1,41 @@
 import { Player } from "./player.js";
 import { Ball } from "./ball.js";
 
+export interface GameState 
+{
+    ball: {x: number, y: number, radius: number};
+    player1: {x: number, y: number, score: number, width: number, height: number};
+    player2: {x: number, y: number, score: number, width: number, height: number};
+}
+
 export class PongGame
 {
     canvasHeight: number = 600;
     canvasLength: number = 800;
     readonly player1: Player; 
     readonly player2: Player;
-    readonly ball: Ball = new Ball();
+    readonly ball: Ball;
 
     score1: number = 0;
     score2: number = 0;
 
     ended:boolean = false;
 
-    constructor(name1: string, name2:string)
+    constructor()
     {
-        this.player1 = new Player(30, 250, name1);
-        this.player2 = new Player(760, 250, name2);
+        this.player1 = new Player(30, 250);
+        this.player2 = new Player(760, 250);
+        this.ball = new Ball();
     }
+
+    serialize(): GameState
+    {
+        return { ball: {x: this.ball.x, y: this.ball.y, radius: this.ball.radius},
+                player1: {x: this.player1.x, y: this.player1.y, score: this.score1, width: this.player1.width, height: this.player1.height},
+                player2: {x: this.player2.x, y: this.player2.y, score: this.score2, width: this.player2.width, height: this.player2.height}
+        };
+    }
+
 
     update(): void
     {
@@ -86,19 +103,8 @@ export class PongGame
         return false;
     }
 
-/*     handleKeyEvent(event: KeyboardEvent): void
+    handleKeyDown(key: string): void
     {
-        const key = event.key;
-
-        if (key === 'w' || key === 's'
-            || key === 'ArrowUp' || key === 'ArrowDown')
-            this.socket.emit('handleKeyEvent', key, event.type);
-    } */
-
-    handleKeyDown(event: KeyboardEvent): void
-    {
-        const key = event.key;
-
         if (key === 'w')
             this.player1.direction = -1;
         if (key === 's')
@@ -107,18 +113,14 @@ export class PongGame
             this.player2.direction = -1;
         if (key === 'ArrowDown')
             this.player2.direction = 1;
-        console.log("down pressed\n");
     }
 
-    handleKeyUp(event: KeyboardEvent): void
+    handleKeyUp(key: string): void
     {
-        const key = event.key;
-
         if (['w', 's'].indexOf(key) !== -1)
             this.player1.direction = 0;
         if (['ArrowUp', 'ArrowDown'].indexOf(key) !== -1)
             this.player2.direction = 0;
-        console.log("up pressed\n");
     }
 
     checkEnd(): void
