@@ -11,6 +11,25 @@ export const io = new Server(3001, {
 let game: PongGame;
 game = new PongGame();
 const targetFPS: number = 60;
+let playercount = 0;
+
+function gameLoop(client_socket, room): void
+{
+    const intervalID: NodeJS.Timeout = setInterval( () => {
+        game.update();
+        const gameState = game.serialize();
+        io.emit('gameState', gameState);
+        if (game.ended)
+        {
+            console.log(`server: game ended`);
+            game.ended = false;
+            game.score1 = 0;
+            game.score2 = 0;
+            io.emit('gameOver');
+            clearInterval(intervalID);
+        }
+    }, 1000 / targetFPS );
+}
 
 io.on('connection', client_socket => {
     console.log("server:", client_socket.id);
@@ -20,21 +39,21 @@ io.on('connection', client_socket => {
         game.player2.name = name2;
         console.log(`server: name 1 ${game.player1.name}`);
         console.log(`server: name 2 ${game.player2.name}`);
+    });
 
-        const intervalID: NodeJS.Timeout = setInterval( () => {
-            game.update();
-            const gameState = game.serialize();
-            io.emit('gameState', gameState);
-            if (game.ended)
-            {
-                console.log(`server: game ended`);
-                game.ended = false;
-                game.score1 = 0;
-                game.score2 = 0;
-                io.emit('gameOver');
-                clearInterval(intervalID);
-            }
-        }, 1000 / targetFPS );
+    client_socket.on('multiplayerName', (name: string, cb) => {
+        if (!playercount)
+        {
+            game.player1.name = name;
+            playercount++;
+        }
+        else
+        {
+            game.player2.name = name;
+            playercount = 0;
+            io.emit('gameStart');
+        }
+        cb(`Your name ${name}, have been registered. Now waiting for players.`);
     });
 
     client_socket.on('handleKeyEvent', (key: string, type: string) => {
