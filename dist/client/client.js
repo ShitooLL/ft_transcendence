@@ -58,29 +58,27 @@ export function getPongScreen(app) {
         //Launching game
         canvas.classList.remove('hidden');
         form.classList.add('hidden');
-        socket.emit('playersNameInput', name1, name2);
+        initLocalGame(canvas, name1, name2);
+    });
+    return (container);
+}
+function initLocalGame(canvas, name1, name2) {
+    socket.on('error', (message) => {
+        console.error(`error : ${message}`);
+    });
+    socket.emit('initLocal', name1, name2);
+    socket.on('gameStart', (roomIndex) => {
         const renderer = new CanvasRenderer(canvas);
         socket.on('gameState', (gameState) => {
             renderer.render(gameState);
         });
-        function handleKeyEvent(event) {
-            const key = event.key;
-            if (key === 'w' || key === 's'
-                || key === 'ArrowUp' || key === 'ArrowDown') {
-                console.log("socket emit in key");
-                socket.emit('handleKeyEvent', key, event.type);
-            }
-        }
         document.addEventListener('keydown', handleKeyEvent);
         document.addEventListener('keyup', handleKeyEvent);
         socket.on('gameOver', () => {
             document.removeEventListener('keydown', handleKeyEvent);
             document.removeEventListener('keyup', handleKeyEvent);
-            app.innerHTML = '';
-            app.appendChild(getPongScreen(app));
         });
     });
-    return (container);
 }
 export function getMultiplayerScreen(app) {
     console.log('Multi screen load');
@@ -134,24 +132,13 @@ const initMultiGame = (canvas, name) => __awaiter(void 0, void 0, void 0, functi
         console.error(`error : ${message}`);
     });
     const initData = yield socket.emitWithAck('initMultiplayer', name);
-    console.log(`playeside: ${initData.playerSide}, roomid: ${initData.roomIndex}`);
     if (initData.playerSide === 2)
         socket.emit('gameReady', initData.roomIndex);
-    socket.on('gameStart', () => {
+    socket.on('gameStart', (nameOpponent) => {
         const renderer = new CanvasRenderer(canvas);
-        console.log('2');
         socket.on('gameState', (gameState) => {
             renderer.render(gameState);
         });
-        function handleKeyEvent(event) {
-            const key = event.key;
-            console.log(`client ${initData.playerSide}: emit handlekey function`);
-            console.log(`playeside: ${initData.playerSide}, roomid: ${initData.roomIndex}`);
-            if (((key === 'w' || key === 's') && initData.playerSide === 1)
-                || ((key === 'ArrowUp' || key === 'ArrowDown') && initData.playerSide === 2)) {
-                socket.emit('handleKeyEvent', event.key, event.type, initData.roomIndex);
-            }
-        }
         document.addEventListener('keydown', handleKeyEvent);
         document.addEventListener('keyup', handleKeyEvent);
         socket.on('gameOver', () => {
@@ -160,3 +147,10 @@ const initMultiGame = (canvas, name) => __awaiter(void 0, void 0, void 0, functi
         });
     });
 });
+function handleKeyEvent(event) {
+    const key = event.key;
+    if ((key === 'w' || key === 's')
+        || (key === 'ArrowUp' || key === 'ArrowDown')) {
+        socket.emit('handleKeyEvent', event.key, event.type);
+    }
+}

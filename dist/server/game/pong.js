@@ -66,24 +66,28 @@ export class PongGame {
         }
         return false;
     }
-    handleKeyDown(key) {
-        if (key === 'w')
-            this.player1.direction = -1;
-        else if (key === 's')
-            this.player1.direction = 1;
-        if (key === 'ArrowUp')
-            this.player2.direction = -1;
-        else if (key === 'ArrowDown')
-            this.player2.direction = 1;
+    handleKeyDown(key, playerSide) {
+        if (playerSide === 1 || playerSide === 0) {
+            if (key === 'w')
+                this.player1.direction = -1;
+            else if (key === 's')
+                this.player1.direction = 1;
+        }
+        if (playerSide === 2 || playerSide === 0) {
+            if (key === 'ArrowUp')
+                this.player2.direction = -1;
+            else if (key === 'ArrowDown')
+                this.player2.direction = 1;
+        }
     }
-    handleKeyUp(key) {
-        if (['w', 's'].indexOf(key) !== -1)
+    handleKeyUp(key, playerSide) {
+        if (['w', 's'].includes(key) && (playerSide === 1 || playerSide === 0))
             this.player1.direction = 0;
-        if (['ArrowUp', 'ArrowDown'].indexOf(key) !== -1)
+        if (['ArrowUp', 'ArrowDown'].includes(key) && (playerSide === 2 || playerSide === 0))
             this.player2.direction = 0;
     }
     checkEnd() {
-        if (this.score1 > 2 || this.score2 > 2)
+        if (this.score1 > 5 || this.score2 > 5)
             this.ended = true;
     }
 }

@@ -68,37 +68,35 @@ export function getPongScreen(app: HTMLElement): HTMLElement
         canvas.classList.remove('hidden');
         form.classList.add('hidden');
 
-        socket.emit('playersNameInput', name1, name2);
+        initLocalGame(canvas, name1, name2);
+    });
 
+    return (container);
+}
+
+function initLocalGame(canvas: HTMLCanvasElement, name1: string, name2: string): void
+{
+    socket.on('error', (message: string) => {
+        console.error(`error : ${message}`);
+    });
+
+    socket.emit('initLocal', name1, name2);
+
+    socket.on('gameStart', (roomIndex: number) => {
         const renderer: CanvasRenderer = new CanvasRenderer(canvas);
-         
+
         socket.on('gameState', (gameState: GameState) => {
             renderer.render(gameState);
         });
-        
-        function handleKeyEvent(event: KeyboardEvent): void
-        {
-            const key = event.key;
 
-            if (key === 'w' || key === 's'
-                || key === 'ArrowUp' || key === 'ArrowDown')
-            {
-                console.log("socket emit in key");
-                socket.emit('handleKeyEvent', key, event.type);
-            }
-        }
         document.addEventListener('keydown', handleKeyEvent);
         document.addEventListener('keyup', handleKeyEvent);
 
         socket.on('gameOver', () => {
             document.removeEventListener('keydown', handleKeyEvent);
             document.removeEventListener('keyup', handleKeyEvent);
-            app.innerHTML = '';
-            app.appendChild(getPongScreen(app));
         });
     });
-
-    return (container);
 }
 
 export function getMultiplayerScreen(app: HTMLElement): HTMLElement
@@ -159,7 +157,6 @@ export function getMultiplayerScreen(app: HTMLElement): HTMLElement
         form.classList.add('hidden');
 
         initMultiGame(canvas, name1);
-
     });
 
     return (container);
@@ -172,33 +169,19 @@ const initMultiGame = async(canvas: HTMLCanvasElement, name: string) => {
         });
 
         const initData: {roomIndex: number,
-                        playerSide: number
+                        playerSide: number,
         } = await socket.emitWithAck('initMultiplayer', name);
-
-        console.log(`playeside: ${initData.playerSide}, roomid: ${initData.roomIndex}`);
 
         if (initData.playerSide === 2)
             socket.emit('gameReady', initData.roomIndex);
 
-        socket.on('gameStart', () => {
+        socket.on('gameStart', (nameOpponent: string) => {
             const renderer: CanvasRenderer = new CanvasRenderer(canvas);
-            console.log('2');
 
             socket.on('gameState', (gameState: GameState) => {
                 renderer.render(gameState);
             });
 
-            function handleKeyEvent(event: KeyboardEvent): void
-            {
-                const key = event.key;
-                console.log(`client ${initData.playerSide}: emit handlekey function`);
-                console.log(`playeside: ${initData.playerSide}, roomid: ${initData.roomIndex}`);
-                if (((key === 'w' || key === 's') && initData.playerSide === 1)
-                    || ((key === 'ArrowUp' || key === 'ArrowDown') && initData.playerSide === 2))
-                {
-                    socket.emit('handleKeyEvent', event.key, event.type, initData.roomIndex);
-                }
-            }
             document.addEventListener('keydown', handleKeyEvent);
             document.addEventListener('keyup', handleKeyEvent);
 
@@ -207,4 +190,15 @@ const initMultiGame = async(canvas: HTMLCanvasElement, name: string) => {
                 document.removeEventListener('keyup', handleKeyEvent);
             });
         });
+}
+
+function handleKeyEvent(event: KeyboardEvent): void
+{
+    const key = event.key;
+
+    if ((key === 'w' || key === 's')
+        || (key === 'ArrowUp' || key === 'ArrowDown'))
+    {
+        socket.emit('handleKeyEvent', event.key, event.type);
+    }
 }

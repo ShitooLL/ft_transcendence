@@ -5,9 +5,9 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("DOM loaded, starting...");
     if (app)
     {
-        // const pongScreen = getPongScreen(app);
-        // app.appendChild(pongScreen);
-        const MultiplayerScreen = getMultiplayerScreen(app);
-        app.appendChild(MultiplayerScreen);
+        const pongScreen = getPongScreen(app);
+        app.appendChild(pongScreen);
+        // const MultiplayerScreen = getMultiplayerScreen(app);
+        // app.appendChild(MultiplayerScreen);
     }
 });
