@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "dist/server/main.js",
   "scripts": {
-    "start": "tsc --watch",
+    "start": "tsc --watch & npx tailwindcss -i input.css -o output.css --watch",
     "startdev": "nodemon ./dist/server/server.js",
     "buildcss": "npx tailwindcss -i input.css -o output.css --watch"
   },

@@ -69,11 +69,11 @@ export class PongGame {
     handleKeyDown(key) {
         if (key === 'w')
             this.player1.direction = -1;
-        if (key === 's')
+        else if (key === 's')
             this.player1.direction = 1;
         if (key === 'ArrowUp')
             this.player2.direction = -1;
-        if (key === 'ArrowDown')
+        else if (key === 'ArrowDown')
             this.player2.direction = 1;
     }
     handleKeyUp(key) {
