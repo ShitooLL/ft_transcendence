@@ -31,12 +31,10 @@ export class PongGame {
         if (this.collidesPaddle(this.player1)) {
             this.generateRandomSpeed(this.ball);
             this.ball.vx = Math.abs(this.ball.vx);
-            console.log("Player 1 hit ball");
         }
         else if (this.collidesPaddle(this.player2)) {
             this.generateRandomSpeed(this.ball);
             this.ball.vx = -Math.abs(this.ball.vx);
-            console.log("Player 2 hit ball");
         }
         this.ball.update();
         this.player1.update(this.canvasHeight);
@@ -73,91 +71,22 @@ export class PongGame {
             && this.ball.x >= this.player1.x - (this.ball.length / 4)) {
             // Ball's center hit paddle
             if (this.isInRange(p.y, p.y + p.height, this.ball.y + (this.ball.length / 2))) {
-                console.log("Middle hit ball");
                 this.ball.vy = this.ball.vy * (Math.random() < 0.5 ? -1 : 1);
                 return true;
             }
             // Ball's upper hit paddle
             else if (this.isInRange(p.y, p.y + p.height, this.ball.y)) {
-                console.log("Upper side hit ball");
                 this.ball.vy = Math.abs(this.ball.vy);
                 return true;
             }
             // Ball's bottom hit paddle
             else if (this.isInRange(p.y, p.y + p.height, this.ball.y + this.ball.length)) {
-                console.log("Bottom side hit ball");
                 this.ball.vy = -Math.abs(this.ball.vy);
                 return true;
             }
         }
         return false;
     }
-    /*
-        collidesPaddle(p: Player): boolean
-        {
-            if ((this.isInRange(p.y, p.y + p.height, this.ball.y - (this.ball.length / 1.25))
-            || this.isInRange(p.y, p.y + p.height, this.ball.y + (this.ball.length / 1.25))))
-            {
-                if (this.isInRange(p.x, p.x + p.width, this.ball.x - this.ball.length))
-                {
-                    console.log("Player 1 hit ball.");
-                    return true;
-                }
-                else if (this.isInRange(p.x, p.x + p.width, this.ball.x + this.ball.length))
-                {
-                    console.log("Player 2 hit ball.");
-                    return true;
-                }
-            }
-            return false;
-        } */
-    /*
-        collidesPaddle(p: Player): boolean
-        {
-            const piSur6 = (Math.sqrt(3) / 2) * this.ball.length;
-            const piSur4 = (Math.sqrt(2) / 2) * this.ball.length;
-            const piSur3 = this.ball.length / 2;
-    
-            // Outer block: Checking collisions of the left and right sides of the ball.
-            if ((this.isInRange(p.y, p.y + p.height, this.ball.y - piSur4)
-            || this.isInRange(p.y, p.y + p.height, this.ball.y + piSur4)))
-            {
-                // left
-                if (this.isInRange(p.x, p.x + p.width, this.ball.x - piSur6) && this.ball.vx < 0)
-                {
-                    console.log("Player 1 hit ball.");
-                    return true;
-                }
-                // right
-                else if (this.isInRange(p.x, p.x + p.width, this.ball.x + piSur6)  && this.ball.vx > 0)
-                {
-                    console.log("Player 2 hit ball.");
-                    return true;
-                }
-            }
-            // Inner block: Checking collisions of the upper and bottom sides of the ball.
-            // if ((this.isInRange(p.x, p.x + p.width, this.ball.x - piSur6) && this.ball.vx < 0)
-            // || (this.isInRange(p.x, p.x + p.width, this.ball.x + piSur6) && this.ball.vx > 0) )
-            if (this.isInRange(p.x, p.x + p.width, this.ball.x))
-            {
-                // console.log(`py: ${p.y}, pylen: ${p.y + p.height}, lineup: ${this.ball.y - this.ball.length}, linebot: ${this.ball.y + this.ball.length} , ball: ${this.ball.y}`);
-                // top
-                if (this.isInRange(p.y, p.y + p.height, this.ball.y - this.ball.length))
-                {
-                    console.log("Upper side hit ball (any player)");
-                    this.ball.vy = Math.abs(this.ball.vy);
-                    return true;
-                }
-                // bot
-                else if (this.isInRange(p.y, p.y + p.height, this.ball.y + this.ball.length))
-                {
-                    console.log("Bottom side hit ball (any player)");
-                    this.ball.vy = -Math.abs(this.ball.vy);
-                    return true;
-                }
-            }
-            return false;
-        } */
     handleKeyDown(key, playerSide) {
         if (playerSide === 1 || playerSide === 0) {
             if (key === 'w')
@@ -179,7 +108,7 @@ export class PongGame {
             this.player2.direction = 0;
     }
     checkEnd() {
-        if (this.score1 >= 5 || this.score2 >= 5)
+        if (this.score1 >= 2 || this.score2 >= 2)
             this.ended = true;
     }
 }

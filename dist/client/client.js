@@ -12,6 +12,7 @@ import io from 'https://cdn.socket.io/4.8.1/socket.io.esm.min.js';
 const socket = io('http://localhost:3001');
 function handleKeyEvent(event) {
     const key = event.key;
+    console.log("keyevent called");
     if ((key === 'w' || key === 's')
         || (key === 'ArrowUp' || key === 'ArrowDown')) {
         socket.emit('handleKeyEvent', event.key, event.type);
@@ -77,7 +78,7 @@ function initLocalGame(canvas, name1, name2) {
     socket.on('gameStart', (roomIndex) => {
         const renderer = new CanvasRenderer(canvas);
         socket.on('gameState', (gameState) => {
-            renderer.render(gameState);
+            renderer.render(gameState, name1, name2);
         });
         document.addEventListener('keydown', handleKeyEvent);
         document.addEventListener('keyup', handleKeyEvent);
@@ -105,7 +106,7 @@ export function getMultiplayerScreen(app) {
     form.className = 'flex gap-4 justify-center items-center max-w-md max-h-md text-black';
     const input1 = document.createElement('input');
     input1.className = 'w-full px-4 py-2 rounded';
-    input1.placeholder = 'Player 1 name';
+    input1.placeholder = 'Player name';
     input1.required = true;
     const startBtn = document.createElement('button');
     startBtn.type = 'submit';
@@ -141,10 +142,10 @@ const initMultiGame = (canvas, name) => __awaiter(void 0, void 0, void 0, functi
     const initData = yield socket.emitWithAck('initMultiplayer', name);
     if (initData.playerSide === 2)
         socket.emit('gameReady', initData.roomIndex);
-    socket.on('gameStart', (nameOpponent) => {
+    socket.on('gameStart', (name1, name2) => {
         const renderer = new CanvasRenderer(canvas);
         socket.on('gameState', (gameState) => {
-            renderer.render(gameState);
+            renderer.render(gameState, name1, name2);
         });
         document.addEventListener('keydown', handleKeyEvent);
         document.addEventListener('keyup', handleKeyEvent);

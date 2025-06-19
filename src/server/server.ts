@@ -19,28 +19,30 @@ interface GameRoom
     playercount: number;
     id: string;
     index: number;
+    intervalID: NodeJS.Timeout | undefined;
 }
 
-function gameLoop(room: GameRoom, intervalID: NodeJS.Timeout | undefined): void
+function gameLoop(room: GameRoom): void
 {
-    intervalID = setInterval( () => {
+    room.intervalID = setInterval( () => {
         room.game.update();
         const gameState = room.game.serialize();
         io.to(room.id).emit('gameState', gameState);
-        if (room.game.ended)
+        // if (room.playercount === 1)
+        if (room.game.ended || room.playercount !== 2)
         {
-            console.log(`server: game ended`);
             io.to(room.id).emit('gameOver');
-            clearInterval(intervalID);
+            clearInterval(room.intervalID);
             io.in(room.id).disconnectSockets();
-            GameRooms.delete(room.index);
+            if (GameRooms.get(room.index))
+                GameRooms.delete(room.index);
+            console.log(`server: game ended`);
         }
     }, 1000 / targetFPS );
 }
 
 io.on('connection', client_socket => {
     console.log("server: connection ", client_socket.id);
-    let intervalID: NodeJS.Timeout | undefined = undefined;
     let room: GameRoom | undefined = undefined;
     let playerSide: number = -1;
     
@@ -53,7 +55,9 @@ io.on('connection', client_socket => {
             playercount: 2,
             id: `Game Room ID ${roomcount}`,
             index: roomcount,
+            intervalID: undefined,
         };
+
         GameRooms.set(roomcount, room);
         roomcount++;
         client_socket.join(room.id);
@@ -61,13 +65,11 @@ io.on('connection', client_socket => {
 
         game.player1.name = name1;
         game.player2.name = name2;
-        console.log(`server: name 1 ${game.player1.name}`);
-        console.log(`server: name 2 ${game.player2.name}`);
 
         console.log("server: game starts in 2 seconds ...");
         setTimeout( () => {
             io.to(room!.id).emit('gameStart', room?.index);
-            gameLoop(room!, intervalID);
+            gameLoop(room!);
         }, 2000);
     });
 
@@ -84,6 +86,7 @@ io.on('connection', client_socket => {
                 playercount: 0,
                 id: `Game Room ID ${roomcount}`,
                 index: roomcount,
+                intervalID: undefined,
             };
             GameRooms.set(roomcount, room);
         }
@@ -107,46 +110,42 @@ io.on('connection', client_socket => {
     });
 
     client_socket.on('gameReady', (roomIndex: number) => {
-        // let room: GameRoom | undefined = GameRooms.get(roomIndex);
         if (!room)
         {
             client_socket.emit('error', { message: `room ${roomIndex} not found`});
             return;
         }
-        let nameOpponent: string;
-        if (playerSide === 1)
-            nameOpponent = room.game.player2.name;
-        else if (playerSide === 2)
-            nameOpponent = room.game.player1.name;
+
         console.log("server: game starts in 2 seconds ...");
         setTimeout( () => {
-            io.to(room!.id).emit('gameStart', nameOpponent);
-            gameLoop(room!, intervalID);
+            io.to(room!.id).emit('gameStart', room!.game.player1.name, room!.game.player2.name);
+            gameLoop(room!);
         }, 2000);
     });
 
     client_socket.on('handleKeyEvent', (key: string, type: string) => {
-        // let room: GameRoom | undefined = GameRooms.get(roomIndex);
         if (!room)
         {
             client_socket.emit('error', { message: `room not found`});
             return;
         }
         if (type === 'keydown')
-        {
             room.game.handleKeyDown(key, playerSide);
-            // console.log("server: (down) key pressed");
-        }
         else if (type === 'keyup')
-        {
             room.game.handleKeyUp(key, playerSide);
-            // console.log("server: (up) key released");
-        }
     });
 
     client_socket.on('disconnect', () => {
         console.log("server: disconnection ", client_socket.id);
         if (room)
-            room.game.ended = true;
+        {
+            room.playercount -= 1;
+            console.log(`server: disconnect client: ${client_socket.id} in room: ${room.index}`);
+            io.to(room.id).emit('gameOver');
+            clearInterval(room.intervalID);
+            io.in(room.id).disconnectSockets();
+            if (GameRooms.get(room.index))
+                GameRooms.delete(room.index);
+        }
     });
 });

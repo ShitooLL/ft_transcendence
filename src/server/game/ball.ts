@@ -20,6 +20,7 @@ export class Ball
 
     reset(canvasLength: number, canvasHeight:number): void
     {
+        console.log("game reset");
         this.x = (canvasLength / 2) - (this.length / 2);
         this.y = (canvasHeight / 2) - (this.length / 2);
         this.vx = -this.vx;                                 //ball start goes to winner of round

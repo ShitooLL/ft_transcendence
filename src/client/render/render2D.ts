@@ -14,7 +14,7 @@ export class CanvasRenderer {
         this.ctx = context;
     };
 
-    render(game: GameState/* , name1: string, name2: string */): void
+    render(game: GameState, name1: string, name2: string): void
     {    
         this.ctx.clearRect(0, 0, 1000, 600);
 
@@ -35,7 +35,7 @@ export class CanvasRenderer {
         this.ctx.font = '28px sans-serif';
         this.ctx.fillText(`${game.player1.score} - ${game.player2.score}`, 468, 45);
         
-        // this.ctx.fillText(`${name1}`, 220, 45);
-        // this.ctx.fillText(`${name2}`, 720, 45);
+        this.ctx.fillText(`${name1}`, 220, 45);
+        this.ctx.fillText(`${name2}`, 720, 45);
     };
 }

@@ -9,6 +9,7 @@ function handleKeyEvent(event: KeyboardEvent): void
 {
     const key = event.key;
 
+    console.log("keyevent called");
     if ((key === 'w' || key === 's')
         || (key === 'ArrowUp' || key === 'ArrowDown'))
     {
@@ -96,7 +97,7 @@ function initLocalGame(canvas: HTMLCanvasElement, name1: string, name2: string):
         const renderer: CanvasRenderer = new CanvasRenderer(canvas);
 
         socket.on('gameState', (gameState: GameState) => {
-            renderer.render(gameState);
+            renderer.render(gameState, name1, name2);
         });
 
         document.addEventListener('keydown', handleKeyEvent);
@@ -132,7 +133,7 @@ export function getMultiplayerScreen(app: HTMLElement): HTMLElement
 
     const input1: HTMLInputElement = document.createElement('input');
     input1.className = 'w-full px-4 py-2 rounded';
-    input1.placeholder = 'Player 1 name';
+    input1.placeholder = 'Player name';
     input1.required = true;
 
     const startBtn: HTMLButtonElement = document.createElement('button');
@@ -185,11 +186,11 @@ const initMultiGame = async(canvas: HTMLCanvasElement, name: string) => {
         if (initData.playerSide === 2)
             socket.emit('gameReady', initData.roomIndex);
 
-        socket.on('gameStart', (nameOpponent: string) => {
+        socket.on('gameStart', (name1: string, name2: string) => {
             const renderer: CanvasRenderer = new CanvasRenderer(canvas);
 
             socket.on('gameState', (gameState: GameState) => {
-                renderer.render(gameState);
+                renderer.render(gameState, name1, name2);
             });
 
             document.addEventListener('keydown', handleKeyEvent);
