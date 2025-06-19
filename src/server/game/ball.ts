@@ -1,10 +1,16 @@
 export class Ball
 {
-    x: number = 400;
-    y: number = 300;
-    vx: number = 10;
-    vy: number = 10;
-    radius: number = 10;
+    x: number;
+    y: number;
+    vx: number = 6;
+    vy: number = 6;
+    length: number = 8;
+
+    constructor(canvasLength: number, canvasHeight:number)
+    {
+        this.x = (canvasLength / 2) - (this.length / 2);
+        this.y = (canvasHeight / 2) - (this.length / 2);
+    }
 
     update(): void
     {
@@ -12,12 +18,11 @@ export class Ball
         this.y += this.vy;
     }
 
-    reset(): void
+    reset(canvasLength: number, canvasHeight:number): void
     {
-        this.x = 400;
-        this.y = 300;
+        this.x = (canvasLength / 2) - (this.length / 2);
+        this.y = (canvasHeight / 2) - (this.length / 2);
         this.vx = -this.vx;                                 //ball start goes to winner of round
         this.vy = this.vy * (Math.random() > 0.5 ? 1 : -1); //random Y value, ball goes up or down
-        console.log("Game reset");
     }
 }

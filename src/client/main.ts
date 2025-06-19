@@ -1,13 +1,13 @@
-import { getPongScreen, getMultiplayerScreen } from "./client.js";
+import { getLocalScreen, getMultiplayerScreen } from "./client.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     const app = document.getElementById("app");
     console.log("DOM loaded, starting...");
     if (app)
     {
-        const pongScreen = getPongScreen(app);
-        app.appendChild(pongScreen);
-        // const MultiplayerScreen = getMultiplayerScreen(app);
-        // app.appendChild(MultiplayerScreen);
+        const localScreen = getLocalScreen(app);
+        app.appendChild(localScreen);
+        // const multiplayerScreen = getMultiplayerScreen(app);
+        // app.appendChild(multiplayerScreen);
     }
 });

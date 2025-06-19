@@ -10,7 +10,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { CanvasRenderer } from './render/render2D.js';
 import io from 'https://cdn.socket.io/4.8.1/socket.io.esm.min.js';
 const socket = io('http://localhost:3001');
-export function getPongScreen(app) {
+function handleKeyEvent(event) {
+    const key = event.key;
+    if ((key === 'w' || key === 's')
+        || (key === 'ArrowUp' || key === 'ArrowDown')) {
+        socket.emit('handleKeyEvent', event.key, event.type);
+    }
+}
+export function getLocalScreen(app) {
     console.log('Pvp screen load');
     const container = document.createElement('div');
     container.className = 'flex gap-6 p-4 justify-center items-start w-full h-full';
@@ -42,7 +49,7 @@ export function getPongScreen(app) {
     container.appendChild(form);
     const canvas = document.createElement('canvas');
     canvas.id = 'gameCanvas';
-    canvas.width = 800;
+    canvas.width = 1000;
     canvas.height = 600;
     canvas.className = 'mt-28 hidden mx-auto rounded-lg';
     container.appendChild(canvas);
@@ -108,7 +115,7 @@ export function getMultiplayerScreen(app) {
     container.appendChild(form);
     const canvas = document.createElement('canvas');
     canvas.id = 'gameCanvas';
-    canvas.width = 800;
+    canvas.width = 1000;
     canvas.height = 600;
     canvas.className = 'mt-28 hidden mx-auto rounded-lg';
     container.appendChild(canvas);
@@ -147,10 +154,3 @@ const initMultiGame = (canvas, name) => __awaiter(void 0, void 0, void 0, functi
         });
     });
 });
-function handleKeyEvent(event) {
-    const key = event.key;
-    if ((key === 'w' || key === 's')
-        || (key === 'ArrowUp' || key === 'ArrowDown')) {
-        socket.emit('handleKeyEvent', event.key, event.type);
-    }
-}

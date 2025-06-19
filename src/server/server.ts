@@ -11,7 +11,7 @@ export const io = new Server(3001, {
 const GameRooms: Map<number, GameRoom> = new Map();
 
 let roomcount: number = 1;
-const targetFPS: number = 60;
+const targetFPS: number = 30;
 
 interface GameRoom
 {
@@ -30,9 +30,6 @@ function gameLoop(room: GameRoom, intervalID: NodeJS.Timeout | undefined): void
         if (room.game.ended)
         {
             console.log(`server: game ended`);
-            // game.ended = false;
-            // game.score1 = 0;
-            // game.score2 = 0;
             io.to(room.id).emit('gameOver');
             clearInterval(intervalID);
             io.in(room.id).disconnectSockets();
@@ -138,23 +135,18 @@ io.on('connection', client_socket => {
         if (type === 'keydown')
         {
             room.game.handleKeyDown(key, playerSide);
-            console.log("server: (down) key pressed");
+            // console.log("server: (down) key pressed");
         }
         else if (type === 'keyup')
         {
             room.game.handleKeyUp(key, playerSide);
-            console.log("server: (up) key released");
+            // console.log("server: (up) key released");
         }
     });
 
     client_socket.on('disconnect', () => {
         console.log("server: disconnection ", client_socket.id);
         if (room)
-        {
-            clearInterval(intervalID);
-            io.to(room.id).emit('gameOver');
-            io.in(room.id).disconnectSockets();
-            GameRooms.delete(room.index);
-        }
+            room.game.ended = true;
     });
 });

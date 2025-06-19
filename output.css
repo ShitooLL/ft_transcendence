@@ -188,6 +188,9 @@
   .mt-28 {
     margin-top: calc(var(--spacing) * 28);
   }
+  .block {
+    display: block;
+  }
   .flex {
     display: flex;
   }

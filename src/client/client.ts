@@ -5,8 +5,18 @@ import io from 'https://cdn.socket.io/4.8.1/socket.io.esm.min.js'
 
 const socket = io('http://localhost:3001');
 
+function handleKeyEvent(event: KeyboardEvent): void
+{
+    const key = event.key;
 
-export function getPongScreen(app: HTMLElement): HTMLElement
+    if ((key === 'w' || key === 's')
+        || (key === 'ArrowUp' || key === 'ArrowDown'))
+    {
+        socket.emit('handleKeyEvent', event.key, event.type);
+    }
+}
+
+export function getLocalScreen(app: HTMLElement): HTMLElement
 {
     console.log('Pvp screen load');
     const container: HTMLDivElement = document.createElement('div');
@@ -46,7 +56,7 @@ export function getPongScreen(app: HTMLElement): HTMLElement
 
     const canvas: HTMLCanvasElement = document.createElement('canvas');
     canvas.id = 'gameCanvas';
-    canvas.width = 800;
+    canvas.width = 1000;
     canvas.height = 600;
     canvas.className = 'mt-28 hidden mx-auto rounded-lg';
     container.appendChild(canvas);
@@ -135,7 +145,7 @@ export function getMultiplayerScreen(app: HTMLElement): HTMLElement
 
     const canvas: HTMLCanvasElement = document.createElement('canvas');
     canvas.id = 'gameCanvas';
-    canvas.width = 800;
+    canvas.width = 1000;
     canvas.height = 600;
     canvas.className = 'mt-28 hidden mx-auto rounded-lg';
     container.appendChild(canvas);
@@ -190,15 +200,4 @@ const initMultiGame = async(canvas: HTMLCanvasElement, name: string) => {
                 document.removeEventListener('keyup', handleKeyEvent);
             });
         });
-}
-
-function handleKeyEvent(event: KeyboardEvent): void
-{
-    const key = event.key;
-
-    if ((key === 'w' || key === 's')
-        || (key === 'ArrowUp' || key === 'ArrowDown'))
-    {
-        socket.emit('handleKeyEvent', event.key, event.type);
-    }
 }

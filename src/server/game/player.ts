@@ -3,9 +3,9 @@ export class Player
     name: string = '';
     x: number = 0;
     y: number = 0;
-    readonly width: number = 10;
-    readonly height: number = 100;
-    speed: number = 12;
+    readonly width: number = 8;
+    readonly height: number = 80;
+    speed: number = 10;
     direction: number = 0;          // -1 for up, 1 for down, 0 for stationary
 
     constructor(x: number, y: number)
