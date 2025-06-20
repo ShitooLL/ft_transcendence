@@ -24,7 +24,7 @@ export class PongGame
     constructor()
     {
         this.player1 = new Player(44, (this.canvasHeight / 2) - 80);
-        this.player2 = new Player(this.canvasLength - 44 - 8, (this.canvasHeight / 2) - 80);    //(964, 260)
+        this.player2 = new Player(this.canvasLength - 44 - 8, (this.canvasHeight / 2) - 80);
         this.ball = new Ball(this.canvasLength, this.canvasHeight);
     }
 

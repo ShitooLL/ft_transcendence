@@ -16,7 +16,7 @@ function handleKeyEvent(event: KeyboardEvent): void
         socket.emit('handleKeyEvent', event.key, event.type);
     }
 }
-
+/* 
 export function getLocalScreen(app: HTMLElement): HTMLElement
 {
     console.log('Pvp screen load');
@@ -28,6 +28,7 @@ export function getLocalScreen(app: HTMLElement): HTMLElement
         console.log(message);
         const div: HTMLDivElement = document.createElement('div');
         div.textContent = message;
+        div.className = 'absolute top-4 left-4';
         container.appendChild(div);
     };
     socket.on("connect", () => {
@@ -84,7 +85,7 @@ export function getLocalScreen(app: HTMLElement): HTMLElement
 
     return (container);
 }
-
+ */
 function initLocalGame(canvas: HTMLCanvasElement, name1: string, name2: string): void
 {
     socket.on('error', (message: string) => {
@@ -109,7 +110,7 @@ function initLocalGame(canvas: HTMLCanvasElement, name1: string, name2: string):
         });
     });
 }
-
+/* 
 export function getMultiplayerScreen(app: HTMLElement): HTMLElement
 {
     console.log('Multi screen load');
@@ -121,6 +122,7 @@ export function getMultiplayerScreen(app: HTMLElement): HTMLElement
         console.log(message);
         const div: HTMLDivElement = document.createElement('div');
         div.textContent = message;
+        div.className = 'absolute top-4 left-4';
         container.appendChild(div);
     };
 
@@ -171,7 +173,7 @@ export function getMultiplayerScreen(app: HTMLElement): HTMLElement
     });
 
     return (container);
-}
+} */
 
 const initMultiGame = async(canvas: HTMLCanvasElement, name: string) => {
 
@@ -201,4 +203,110 @@ const initMultiGame = async(canvas: HTMLCanvasElement, name: string) => {
                 document.removeEventListener('keyup', handleKeyEvent);
             });
         });
+}
+
+export function getAllScreen(app: HTMLElement): HTMLElement
+{
+    console.log('All screen load');
+    const container: HTMLDivElement = document.createElement('div');
+    container.className = 'flex flex-col gap-8 p-4 justify-center items-center w-full h-screen relative';
+
+
+    function msg_box(container: HTMLDivElement, message: string)
+    {
+        console.log(message);
+        const div: HTMLDivElement = document.createElement('div');
+        div.textContent = message;
+        div.className = 'absolute top-4 left-4';
+        container.appendChild(div);
+    };
+
+    socket.on("connect", () => {
+        msg_box(container, `you connected to socket with id: ${socket.id}`);
+    });
+
+    const formlocal: HTMLFormElement = document.createElement('form');
+    formlocal.className = 'flex gap-4 justify-center items-center max-w-md max-h-md text-black';
+
+    const input1local: HTMLInputElement = document.createElement('input');
+    input1local.className = 'w-full px-4 py-2 rounded';
+    input1local.placeholder = 'Player 1 name';
+    input1local.required = true;
+
+    const input2local: HTMLInputElement = document.createElement('input');
+    input2local.className = 'w-full px-4 py-2 rounded';
+    input2local.placeholder = 'Player 2 name';
+    input2local.required = true;
+
+    const startBtnlocal: HTMLButtonElement = document.createElement('button');
+    startBtnlocal.type = 'submit';
+    startBtnlocal.textContent = 'Start Local';
+    startBtnlocal.className = 'bg-white px-6 py-2 rounded font-semibold hover:bg-gray-300';
+
+
+    const formmulti: HTMLFormElement = document.createElement('form');
+    formmulti.className = 'flex gap-4 justify-center items-center max-w-md max-h-md text-black';
+
+    const input1multi: HTMLInputElement = document.createElement('input');
+    input1multi.className = 'w-full px-4 py-2 rounded';
+    input1multi.placeholder = 'Player name';
+    input1multi.required = true;
+
+    const startBtnmulti: HTMLButtonElement = document.createElement('button');
+    startBtnmulti.type = 'submit';
+    startBtnmulti.textContent = 'Start Multi';
+    startBtnmulti.className = 'bg-white px-6 py-2 rounded font-semibold hover:bg-gray-300';
+
+    formmulti.append(input1multi, startBtnmulti);
+    formlocal.append(input1local, input2local, startBtnlocal);
+    container.append(formlocal, formmulti);
+
+    const canvas: HTMLCanvasElement = document.createElement('canvas');
+    canvas.id = 'gameCanvas';
+    canvas.width = 1000;
+    canvas.height = 600;
+    canvas.className = 'hidden mx-auto rounded-lg';
+    container.appendChild(canvas);
+
+    //Username validation into game
+        formlocal.addEventListener('submit', (e: Event) => {
+        e.preventDefault();
+
+        const name1: string = input1local.value.trim();
+        const name2: string = input2local.value.trim();
+
+        if (!name1 || !name2)
+        {
+            alert('Please enter both player names.');
+            return;
+        }
+
+        //Launching game
+        canvas.classList.remove('hidden');
+        formlocal.classList.add('hidden');
+        formmulti.classList.add('hidden');
+
+        initLocalGame(canvas, name1, name2);
+    });
+
+
+    formmulti.addEventListener('submit', (e: Event) => {
+        e.preventDefault();
+
+        const name1: string = input1multi.value.trim();
+
+        if (!name1)
+        {
+            alert('Please enter a player name.');
+            return;
+        }
+
+        //Launching game
+        canvas.classList.remove('hidden');
+        formlocal.classList.add('hidden');
+        formmulti.classList.add('hidden');
+
+        initMultiGame(canvas, name1);
+    });
+    return (container);
 }
