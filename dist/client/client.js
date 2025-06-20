@@ -75,7 +75,7 @@ function initLocalGame(canvas, name1, name2) {
         console.error(`error : ${message}`);
     });
     socket.emit('initLocal', name1, name2);
-    socket.on('gameStart', (roomIndex) => {
+    socket.on('gameStart', () => {
         const renderer = new CanvasRenderer(canvas);
         socket.on('gameState', (gameState) => {
             renderer.render(gameState, name1, name2);

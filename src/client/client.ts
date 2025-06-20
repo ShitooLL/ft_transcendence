@@ -93,7 +93,7 @@ function initLocalGame(canvas: HTMLCanvasElement, name1: string, name2: string):
 
     socket.emit('initLocal', name1, name2);
 
-    socket.on('gameStart', (roomIndex: number) => {
+    socket.on('gameStart', () => {
         const renderer: CanvasRenderer = new CanvasRenderer(canvas);
 
         socket.on('gameState', (gameState: GameState) => {

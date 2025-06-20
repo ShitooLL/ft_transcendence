@@ -11,6 +11,7 @@ export const io = new Server(3001, {
 const GameRooms: Map<number, GameRoom> = new Map();
 
 let roomcount: number = 1;
+let localcount: number = 1;
 const targetFPS: number = 30;
 
 interface GameRoom
@@ -28,14 +29,17 @@ function gameLoop(room: GameRoom): void
         room.game.update();
         const gameState = room.game.serialize();
         io.to(room.id).emit('gameState', gameState);
-        // if (room.playercount === 1)
+
         if (room.game.ended || room.playercount !== 2)
         {
             io.to(room.id).emit('gameOver');
             clearInterval(room.intervalID);
             io.in(room.id).disconnectSockets();
             if (GameRooms.get(room.index))
+            {
+                console.log("delete room in map");
                 GameRooms.delete(room.index);
+            }
             console.log(`server: game ended`);
         }
     }, 1000 / targetFPS );
@@ -53,13 +57,11 @@ io.on('connection', client_socket => {
         room = {
             game: game,
             playercount: 2,
-            id: `Game Room ID ${roomcount}`,
-            index: roomcount,
+            id: `Game Room ID local ${localcount}`,
+            index: localcount,
             intervalID: undefined,
         };
-
-        GameRooms.set(roomcount, room);
-        roomcount++;
+        localcount++;
         client_socket.join(room.id);
         playerSide = 0;
 
@@ -68,7 +70,7 @@ io.on('connection', client_socket => {
 
         console.log("server: game starts in 2 seconds ...");
         setTimeout( () => {
-            io.to(room!.id).emit('gameStart', room?.index);
+            io.to(room!.id).emit('gameStart');
             gameLoop(room!);
         }, 2000);
     });
@@ -90,18 +92,17 @@ io.on('connection', client_socket => {
             };
             GameRooms.set(roomcount, room);
         }
-        let game: PongGame = room.game;
         client_socket.join(room.id);
 
         if (room.playercount === 0)
         {
-            game.player1.name = name;
+            room.game.player1.name = name;
             playerSide = 1;
             room.playercount++;
         }
         else if (room.playercount === 1)
         {
-            game.player2.name = name; 
+            room.game.player2.name = name; 
             playerSide = 2;
             room.playercount++;
             roomcount++;
