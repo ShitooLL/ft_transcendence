@@ -5,7 +5,7 @@ import io from 'https://cdn.socket.io/4.8.1/socket.io.esm.min.js'
 
 const socket = io('http://localhost:3001');
 
-function handleKeyEvent(event: KeyboardEvent): void
+/* function handleKeyEvent(event: KeyboardEvent): void
 {
     const key = event.key;
 
@@ -15,7 +15,8 @@ function handleKeyEvent(event: KeyboardEvent): void
     {
         socket.emit('handleKeyEvent', event.key, event.type);
     }
-}
+} */
+
 /* 
 export function getLocalScreen(app: HTMLElement): HTMLElement
 {
@@ -86,21 +87,57 @@ export function getLocalScreen(app: HTMLElement): HTMLElement
     return (container);
 }
  */
-function initLocalGame(canvas: HTMLCanvasElement, name1: string, name2: string): void
+async function initLocalGame(canvas: HTMLCanvasElement, name1: string, name2: string)
 {
     socket.on('error', (message: string) => {
         console.error(`error : ${message}`);
     });
 
-    socket.emit('initLocal', name1, name2);
+    // socket.emit('initLocal', name1, name2);
 
-    socket.on('gameStart', () => {
+    const responseStart = await fetch('http://localhost:3002/api/game/create-game', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ players: [name1, name2] })
+    });
+    const initData = await responseStart.json();
+    if (!responseStart.ok)
+        console.error('error: ', responseStart.status, initData.error);
+
+    socket.emit('joinRoom', initData.roomId);
+
+    socket.on('gameStart', (roomIndex: number) => {
         const renderer: CanvasRenderer = new CanvasRenderer(canvas);
 
         socket.on('gameState', (gameState: GameState) => {
             renderer.render(gameState, name1, name2);
         });
-
+        console.log(`client ${roomIndex}`);
+        async function handleKeyEvent(event: KeyboardEvent)
+        {
+            const key = event.key;
+        
+            console.log("keyevent called");
+            if ((key === 'w' || key === 's')
+                || (key === 'ArrowUp' || key === 'ArrowDown'))
+            {
+                // socket.emit('handleKeyEvent', event.key, event.type);
+                const response = await fetch('http://localhost:3002/api/game/move', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        roomId: roomIndex,
+                        playerSide: 0,
+                        key: key,
+                        type: event.type,
+                        mode: 'local'
+                    })
+                });
+                if (!response.ok)
+                    console.error('error: ', response.status);
+            }
+        }
+        
         document.addEventListener('keydown', handleKeyEvent);
         document.addEventListener('keyup', handleKeyEvent);
 
@@ -175,8 +212,8 @@ export function getMultiplayerScreen(app: HTMLElement): HTMLElement
     return (container);
 } */
 
-const initMultiGame = async(canvas: HTMLCanvasElement, name: string) => {
-
+async function initMultiGame(canvas: HTMLCanvasElement, name: string)
+{
         socket.on('error', (message: string) => {
             console.error(`error : ${message}`);
         });
@@ -194,6 +231,31 @@ const initMultiGame = async(canvas: HTMLCanvasElement, name: string) => {
             socket.on('gameState', (gameState: GameState) => {
                 renderer.render(gameState, name1, name2);
             });
+
+            async function handleKeyEvent(event: KeyboardEvent)
+            {
+                const key = event.key;
+            
+                console.log("keyevent called");
+                if ((key === 'w' || key === 's')
+                    || (key === 'ArrowUp' || key === 'ArrowDown'))
+                {
+                    // socket.emit('handleKeyEvent', event.key, event.type);
+                    const response = await fetch('http://localhost:3002/api/game/move', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            roomId: initData.roomIndex,
+                            playerSide: initData.playerSide,
+                            key: key,
+                            type: event.type,
+                            mode: 'multi'
+                        })
+                    });
+                    if (!response.ok)
+                        console.error('error: ', response.status);
+                }
+            }
 
             document.addEventListener('keydown', handleKeyEvent);
             document.addEventListener('keyup', handleKeyEvent);

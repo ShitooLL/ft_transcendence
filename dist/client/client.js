@@ -10,14 +10,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { CanvasRenderer } from './render/render2D.js';
 import io from 'https://cdn.socket.io/4.8.1/socket.io.esm.min.js';
 const socket = io('http://localhost:3001');
-function handleKeyEvent(event) {
+/* function handleKeyEvent(event: KeyboardEvent): void
+{
     const key = event.key;
+
     console.log("keyevent called");
     if ((key === 'w' || key === 's')
-        || (key === 'ArrowUp' || key === 'ArrowDown')) {
+        || (key === 'ArrowUp' || key === 'ArrowDown'))
+    {
         socket.emit('handleKeyEvent', event.key, event.type);
     }
-}
+} */
 /*
 export function getLocalScreen(app: HTMLElement): HTMLElement
 {
@@ -89,20 +92,55 @@ export function getLocalScreen(app: HTMLElement): HTMLElement
 }
  */
 function initLocalGame(canvas, name1, name2) {
-    socket.on('error', (message) => {
-        console.error(`error : ${message}`);
-    });
-    socket.emit('initLocal', name1, name2);
-    socket.on('gameStart', () => {
-        const renderer = new CanvasRenderer(canvas);
-        socket.on('gameState', (gameState) => {
-            renderer.render(gameState, name1, name2);
+    return __awaiter(this, void 0, void 0, function* () {
+        socket.on('error', (message) => {
+            console.error(`error : ${message}`);
         });
-        document.addEventListener('keydown', handleKeyEvent);
-        document.addEventListener('keyup', handleKeyEvent);
-        socket.on('gameOver', () => {
-            document.removeEventListener('keydown', handleKeyEvent);
-            document.removeEventListener('keyup', handleKeyEvent);
+        // socket.emit('initLocal', name1, name2);
+        const responseStart = yield fetch('http://localhost:3002/api/game/create-game', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ players: [name1, name2] })
+        });
+        const initData = yield responseStart.json();
+        if (!responseStart.ok)
+            console.error('error: ', responseStart.status, initData.error);
+        socket.emit('joinRoom', initData.roomId);
+        socket.on('gameStart', (roomIndex) => {
+            const renderer = new CanvasRenderer(canvas);
+            socket.on('gameState', (gameState) => {
+                renderer.render(gameState, name1, name2);
+            });
+            console.log(`client ${roomIndex}`);
+            function handleKeyEvent(event) {
+                return __awaiter(this, void 0, void 0, function* () {
+                    const key = event.key;
+                    console.log("keyevent called");
+                    if ((key === 'w' || key === 's')
+                        || (key === 'ArrowUp' || key === 'ArrowDown')) {
+                        // socket.emit('handleKeyEvent', event.key, event.type);
+                        const response = yield fetch('http://localhost:3002/api/game/move', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                roomId: roomIndex,
+                                playerSide: 0,
+                                key: key,
+                                type: event.type,
+                                mode: 'local'
+                            })
+                        });
+                        if (!response.ok)
+                            console.error('error: ', response.status);
+                    }
+                });
+            }
+            document.addEventListener('keydown', handleKeyEvent);
+            document.addEventListener('keyup', handleKeyEvent);
+            socket.on('gameOver', () => {
+                document.removeEventListener('keydown', handleKeyEvent);
+                document.removeEventListener('keyup', handleKeyEvent);
+            });
         });
     });
 }
@@ -170,26 +208,51 @@ export function getMultiplayerScreen(app: HTMLElement): HTMLElement
 
     return (container);
 } */
-const initMultiGame = (canvas, name) => __awaiter(void 0, void 0, void 0, function* () {
-    socket.on('error', (message) => {
-        console.error(`error : ${message}`);
-    });
-    const initData = yield socket.emitWithAck('initMultiplayer', name);
-    if (initData.playerSide === 2)
-        socket.emit('gameReady', initData.roomIndex);
-    socket.on('gameStart', (name1, name2) => {
-        const renderer = new CanvasRenderer(canvas);
-        socket.on('gameState', (gameState) => {
-            renderer.render(gameState, name1, name2);
+function initMultiGame(canvas, name) {
+    return __awaiter(this, void 0, void 0, function* () {
+        socket.on('error', (message) => {
+            console.error(`error : ${message}`);
         });
-        document.addEventListener('keydown', handleKeyEvent);
-        document.addEventListener('keyup', handleKeyEvent);
-        socket.on('gameOver', () => {
-            document.removeEventListener('keydown', handleKeyEvent);
-            document.removeEventListener('keyup', handleKeyEvent);
+        const initData = yield socket.emitWithAck('initMultiplayer', name);
+        if (initData.playerSide === 2)
+            socket.emit('gameReady', initData.roomIndex);
+        socket.on('gameStart', (name1, name2) => {
+            const renderer = new CanvasRenderer(canvas);
+            socket.on('gameState', (gameState) => {
+                renderer.render(gameState, name1, name2);
+            });
+            function handleKeyEvent(event) {
+                return __awaiter(this, void 0, void 0, function* () {
+                    const key = event.key;
+                    console.log("keyevent called");
+                    if ((key === 'w' || key === 's')
+                        || (key === 'ArrowUp' || key === 'ArrowDown')) {
+                        // socket.emit('handleKeyEvent', event.key, event.type);
+                        const response = yield fetch('http://localhost:3002/api/game/move', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                roomId: initData.roomIndex,
+                                playerSide: initData.playerSide,
+                                key: key,
+                                type: event.type,
+                                mode: 'multi'
+                            })
+                        });
+                        if (!response.ok)
+                            console.error('error: ', response.status);
+                    }
+                });
+            }
+            document.addEventListener('keydown', handleKeyEvent);
+            document.addEventListener('keyup', handleKeyEvent);
+            socket.on('gameOver', () => {
+                document.removeEventListener('keydown', handleKeyEvent);
+                document.removeEventListener('keyup', handleKeyEvent);
+            });
         });
     });
-});
+}
 export function getAllScreen(app) {
     console.log('All screen load');
     const container = document.createElement('div');

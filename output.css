@@ -12,8 +12,6 @@
     --color-white: #fff;
     --spacing: 0.25rem;
     --container-md: 28rem;
-    --text-sm: 0.875rem;
-    --text-sm--line-height: calc(1.25 / 0.875);
     --font-weight-semibold: 600;
     --radius-lg: 0.5rem;
     --default-font-family: var(--font-sans);
