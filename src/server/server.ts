@@ -1,5 +1,6 @@
 import { Server } from "socket.io";
 import { PongGame } from './game/pong.js'
+import Fastify from 'fastify';
 
 export const io = new Server(3001, {
     cors:
@@ -7,8 +8,9 @@ export const io = new Server(3001, {
         origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
     },
 });
+const fastify = Fastify();
 
-const GameRooms: Map<number, GameRoom> = new Map();
+const GameRooms: Map<string, GameRoom> = new Map();
 
 let roomcount: number = 1;
 let localcount: number = 1;
@@ -20,7 +22,7 @@ interface GameRoom
     playercount: number;
     id: string;
     index: number;
-    intervalID: NodeJS.Timeout | undefined;
+    intervalID?: NodeJS.Timeout;
 }
 
 function gameLoop(room: GameRoom): void
@@ -35,11 +37,8 @@ function gameLoop(room: GameRoom): void
             io.to(room.id).emit('gameOver');
             clearInterval(room.intervalID);
             io.in(room.id).disconnectSockets();
-            if (GameRooms.get(room.index))
-            {
-                console.log("delete room in map");
-                GameRooms.delete(room.index);
-            }
+            GameRooms.delete(room.id);
+
             console.log(`server: game ended`);
         }
     }, 1000 / targetFPS );
@@ -51,18 +50,18 @@ io.on('connection', client_socket => {
     let playerSide: number = -1;
     
     client_socket.on('initLocal', (name1: string, name2: string) => {
-        let game: PongGame;
-        game = new PongGame();
-        
+        const game: PongGame = new PongGame();
+
         room = {
             game: game,
             playercount: 2,
             id: `Game Room ID local ${localcount}`,
             index: localcount,
-            intervalID: undefined,
         };
-        localcount++;
+        GameRooms.set(room.id, room);
         client_socket.join(room.id);
+        
+        localcount++;
         playerSide = 0;
 
         game.player1.name = name1;
@@ -77,20 +76,18 @@ io.on('connection', client_socket => {
 
     client_socket.on('initMultiplayer', (name: string, ackCallback) => {
 
-        room = GameRooms.get(roomcount);
+        room = GameRooms.get(`Game Room ID ${roomcount}`);
         if (!room)
         {
-            let newGame: PongGame;
-            newGame = new PongGame();
+            const newGame: PongGame = new PongGame();
 
             room = {
                 game: newGame,
                 playercount: 0,
                 id: `Game Room ID ${roomcount}`,
                 index: roomcount,
-                intervalID: undefined,
             };
-            GameRooms.set(roomcount, room);
+            GameRooms.set(room.id, room);
         }
         client_socket.join(room.id);
 
@@ -113,7 +110,7 @@ io.on('connection', client_socket => {
     client_socket.on('gameReady', (roomIndex: number) => {
         if (!room)
         {
-            client_socket.emit('error', { message: `room ${roomIndex} not found`});
+            client_socket.emit('error', 'room not found');
             return;
         }
 
@@ -127,7 +124,7 @@ io.on('connection', client_socket => {
     client_socket.on('handleKeyEvent', (key: string, type: string) => {
         if (!room)
         {
-            client_socket.emit('error', { message: `room not found`});
+            client_socket.emit('error', 'room not found');
             return;
         }
         if (type === 'keydown')
@@ -145,8 +142,92 @@ io.on('connection', client_socket => {
             io.to(room.id).emit('gameOver');
             clearInterval(room.intervalID);
             io.in(room.id).disconnectSockets();
-            if (GameRooms.get(room.index))
-                GameRooms.delete(room.index);
+            GameRooms.delete(room.id);
         }
     });
+});
+
+
+fastify.post<{ Body: { roomId: number, player: 1 | 2, direction: 'up' | 'down', mode?: string } }>
+    ('/api/game/move', (req, reply) => {
+    const { roomId, player, direction, mode } = req.body;
+    const str = mode === 'multi' ? 'Game Room ID ' : 'Game Room ID local ';
+
+    const room = GameRooms.get(str + `${roomId}`);
+    if (!room)
+        return reply.code(404).send({ error: 'room not found' });
+    else if (direction !== 'up' && direction !== 'down')
+        return reply.code(400).send({ error: 'incorrect direction' });
+    else if (player !== 1 && player !== 2)
+        return reply.code(400).send({error: 'player not found'});
+
+    let key;
+    if (player === 1)
+        key = direction === 'up' ? 'w' : 's';
+    else
+        key = direction === 'up' ? 'ArrowUp' : 'ArrowDown';
+
+    room.game.handleKeyDown(key, player);
+    return reply.send({ message: 'REST API: movement applied' });
+});
+
+fastify.get<{ Querystring: { mode?: string, roomId: number } }>
+    ('/api/game/state', (req, reply) => {
+    const str = req.query.mode === 'multi' ? 'Game Room ID ' : 'Game Room ID local ';
+
+    const room = GameRooms.get(str + `${req.query.roomId}`);
+    if (!room)
+        return reply.code(404).send({ error: 'room not found' });
+
+    return reply.send(room.game.serialize());
+});
+
+fastify.post<{ Body: { players: [string, string] } }>
+    ('/api/game/start', (req, reply) => {
+    const p1 = req.body.players[0];
+    const p2 = req.body.players[1];
+    if (!p1 || !p2)
+        return reply.code(400).send({ error: "Player's names are missing" });
+
+    const game = new PongGame();
+    game.player1.name = p1;
+    game.player2.name = p2;
+
+    const room: GameRoom = {
+        game: game,
+        playercount: 2,
+        id: `Game Room ID local ${localcount}`,
+        index: localcount
+    };
+    localcount++;
+    GameRooms.set(room.id, room);
+    gameLoop(room);
+
+    return reply.send({ message: 'REST API: game started', roomId: room.index });
+});
+
+fastify.post<{ Body: { mode?: string, roomId: number, } }>
+    ('/api/game/end', (req, reply) => {
+    const str = req.body.mode === 'multi' ? 'Game Room ID ' : 'Game Room ID local ';
+
+    const room = GameRooms.get(str + `${req.body.roomId}`);
+    if (!room)
+        return reply.code(400).send({ error: 'room not found' });
+
+    clearInterval(room.intervalID);
+    room.game.ended = true;
+    room.playercount -= 1;
+    io.to(room.id).emit('gameOver');
+    io.in(room.id).disconnectSockets();
+    GameRooms.delete(room.id);
+    return reply.send({ message: 'REST API: game over' });
+});
+
+// API START
+fastify.listen({ port: 3002 }, (error, address) => {
+    if (error) {
+        console.error('error: fastify, ', error);
+        process.exit(1);
+    }
+    console.log(`API REST started on ${address}`);
 });

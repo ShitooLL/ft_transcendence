@@ -108,7 +108,7 @@ export class PongGame {
             this.player2.direction = 0;
     }
     checkEnd() {
-        if (this.score1 >= 2 || this.score2 >= 2)
+        if (this.score1 >= 10 || this.score2 >= 10)
             this.ended = true;
     }
 }
