@@ -1,21 +1,8 @@
 import { Server } from "socket.io";
+import { Server as httpServer } from "http";
 import { PongGame } from './game/pong.js'
 import Fastify from 'fastify';
 import cors from '@fastify/cors'
-
-export const io = new Server(3001, {
-    cors:
-    {
-        origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
-    },
-});
-const fastify = Fastify();
-
-fastify.register(cors, {
-    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type']
-});
 
 const GameRooms: Map<string, GameRoom> = new Map();
 
@@ -31,6 +18,15 @@ interface GameRoom
     index: number;
     intervalID?: NodeJS.Timeout;
 }
+
+export function initGameServer(httpServer: httpServer)
+{
+    const io = new Server(httpServer, {
+        cors:
+        {
+            origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+        },
+    });
 
 function gameLoop(room: GameRoom): void
 {
@@ -73,31 +69,6 @@ io.on('connection', client_socket => {
         }, 2000);
     });
 
-/*     client_socket.on('initLocal', (name1: string, name2: string) => {
-        const game: PongGame = new PongGame();
-
-        room = {
-            game: game,
-            playercount: 2,
-            id: `Game Room ID local ${localcount}`,
-            index: localcount,
-        };
-        GameRooms.set(room.id, room);
-        client_socket.join(room.id);
-        
-        localcount++;
-        playerSide = 0;
-
-        game.player1.name = name1;
-        game.player2.name = name2;
-
-        console.log("server: game starts in 2 seconds ...");
-        setTimeout( () => {
-            io.to(room!.id).emit('gameStart', room!.index);
-            gameLoop(room!);
-        }, 2000);
-    });
- */
     client_socket.on('initMultiplayer', (name: string, ackCallback) => {
 
         room = GameRooms.get(`Game Room ID ${roomcount}`);
@@ -163,12 +134,18 @@ io.on('connection', client_socket => {
         {
             room.playercount -= 1;
             console.log(`server: disconnect client: ${client_socket.id} in room: ${room.index}`);
-            io.to(room.id).emit('gameOver');
-            clearInterval(room.intervalID);
-            io.in(room.id).disconnectSockets();
-            GameRooms.delete(room.id);
         }
     });
+});
+
+}
+
+const fastify = Fastify();
+
+fastify.register(cors, {
+    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type']
 });
 
 
@@ -180,19 +157,19 @@ fastify.post<{ Body: { roomId: number, playerSide: 0 | 1 | 2, key: string, type:
 
     const room = GameRooms.get(str + `${roomId}`);
     if (!room)
-        return reply.code(404).send({ error: 'room not found' });
+        return reply.code(401).send({ error: 'room not found' });
     else if (!validSide.includes(playerSide))
-        return reply.code(401).send({ error: 'player not found' });
+        return reply.code(402).send({ error: 'player not found' });
     else if (key !== 'ArrowUp' && key !== 'ArrowDown'
         && key !== 'w' && key !== 's')
-        return reply.code(402).send({ error: 'incorrect key input' });
+        return reply.code(403).send({ error: 'incorrect key input' });
 
     if (type === 'keydown')
         room.game.handleKeyDown(key, playerSide);
     else if (type === 'keyup')
         room.game.handleKeyUp(key, playerSide);
     else
-        return reply.code(400).send({ error: 'incorrect key press type event' });
+        return reply.code(403).send({ error: 'incorrect key press type event' });
 
     return reply.send({ message: 'REST API: movement applied' });
 });
@@ -203,7 +180,7 @@ fastify.get<{ Querystring: { mode?: string, roomId: number } }>
 
     const room = GameRooms.get(str + `${req.query.roomId}`);
     if (!room)
-        return reply.code(404).send({ error: 'room not found' });
+        return reply.code(401).send({ error: 'room not found' });
 
     return reply.send(room.game.serialize());
 });
@@ -213,7 +190,7 @@ fastify.post<{ Body: { players: [string, string] } }>
     const p1 = req.body.players[0];
     const p2 = req.body.players[1];
     if (!p1 || !p2)
-        return reply.code(400).send({ error: "Player's names are missing" });
+        return reply.code(402).send({ error: "Player's names are missing" });
 
     const game = new PongGame();
     game.player1.name = p1;
@@ -237,21 +214,18 @@ fastify.post<{ Body: { mode?: string, roomId: number, } }>
 
     const room = GameRooms.get(str + `${req.body.roomId}`);
     if (!room)
-        return reply.code(400).send({ error: 'room not found' });
+        return reply.code(401).send({ error: 'room not found' });
 
-    clearInterval(room.intervalID);
     room.game.ended = true;
-    room.playercount -= 1;
-    io.to(room.id).emit('gameOver');
-    io.in(room.id).disconnectSockets();
-    GameRooms.delete(room.id);
     return reply.send({ message: 'REST API: game over' });
 });
 
-fastify.listen({ port: 3002 }, (error, address) => {
+fastify.listen({ port: 3001 }, (error, address) => {
     if (error) {
         console.error('error: fastify, ', error);
         process.exit(1);
     }
     console.log(`API REST started on ${address}`);
 });
+
+initGameServer(fastify.server);

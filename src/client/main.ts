@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("DOM loaded, starting...");
     if (app)
     {
-        const AllScreen = getAllScreen(app);
+        const AllScreen = getAllScreen();
         app.appendChild(AllScreen);
     }
 });

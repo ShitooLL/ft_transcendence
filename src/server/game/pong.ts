@@ -68,17 +68,21 @@ export class PongGame
         this.player2.update(this.canvasHeight);
 
         //Score
-        if (this.ball.x < 0)
+        if (this.ball.x < 0 || this.ball.x > this.canvasLength)
         {
-            this.score2++;
+            const player1Scored = this.ball.x > this.canvasLength;
+            
+            player1Scored ? this.score1++ : this.score2++;
             this.checkEnd();
             this.ball.reset(this.canvasLength, this.canvasHeight);
-        }
-        else if (this.ball.x > this.canvasLength)
-        {
-            this.score1++;
-            this.checkEnd();
-            this.ball.reset(this.canvasLength, this.canvasHeight);
+            if (!this.ended)
+            {
+                setTimeout( () => {
+                    this.generateRandomSpeed(this.ball)
+                    this.ball.vx = player1Scored ? Math.abs(this.ball.vx) : -Math.abs(this.ball.vx);   //ball goes to looser of round
+                    this.ball.vy = this.ball.vy * (Math.random() > 0.5 ? 1 : -1);                   //random Y value, ball goes up or down
+                }, 1000);
+            }
         }
     }
 
@@ -157,7 +161,7 @@ export class PongGame
 
     checkEnd(): void
     {
-        if (this.score1 >= 10 || this.score2 >= 10)
+        if (this.score1 >= 2 || this.score2 >= 2)
             this.ended = true;
     }
 }

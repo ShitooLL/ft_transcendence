@@ -8,8 +8,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { CanvasRenderer } from './render/render2D.js';
-import io from 'https://cdn.socket.io/4.8.1/socket.io.esm.min.js';
-const socket = io('http://localhost:3001');
+const socket = io('http://localhost:3001', {
+    autoConnect: false,
+});
 /* function handleKeyEvent(event: KeyboardEvent): void
 {
     const key = event.key;
@@ -93,18 +94,21 @@ export function getLocalScreen(app: HTMLElement): HTMLElement
  */
 function initLocalGame(canvas, name1, name2) {
     return __awaiter(this, void 0, void 0, function* () {
+        const container = document.getElementById('pong-game-container');
         socket.on('error', (message) => {
             console.error(`error : ${message}`);
         });
         // socket.emit('initLocal', name1, name2);
-        const responseStart = yield fetch('http://localhost:3002/api/game/create-game', {
+        const responseStart = yield fetch('http://localhost:3001/api/game/create-game', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ players: [name1, name2] })
         });
         const initData = yield responseStart.json();
-        if (!responseStart.ok)
+        if (!responseStart.ok) {
             console.error('error: ', responseStart.status, initData.error);
+            return;
+        }
         socket.emit('joinRoom', initData.roomId);
         socket.on('gameStart', (roomIndex) => {
             const renderer = new CanvasRenderer(canvas);
@@ -119,7 +123,7 @@ function initLocalGame(canvas, name1, name2) {
                     if ((key === 'w' || key === 's')
                         || (key === 'ArrowUp' || key === 'ArrowDown')) {
                         // socket.emit('handleKeyEvent', event.key, event.type);
-                        const response = yield fetch('http://localhost:3002/api/game/move', {
+                        const response = yield fetch('http://localhost:3001/api/game/move', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -140,6 +144,10 @@ function initLocalGame(canvas, name1, name2) {
             socket.on('gameOver', () => {
                 document.removeEventListener('keydown', handleKeyEvent);
                 document.removeEventListener('keyup', handleKeyEvent);
+                const div = document.createElement('div');
+                div.textContent = 'Game Over';
+                div.className = 'mt-8 text-white rounded text-5xl shadow-lg';
+                container.insertBefore(div, canvas);
             });
         });
     });
@@ -210,6 +218,7 @@ export function getMultiplayerScreen(app: HTMLElement): HTMLElement
 } */
 function initMultiGame(canvas, name) {
     return __awaiter(this, void 0, void 0, function* () {
+        const container = document.getElementById('pong-game-container');
         socket.on('error', (message) => {
             console.error(`error : ${message}`);
         });
@@ -228,7 +237,7 @@ function initMultiGame(canvas, name) {
                     if ((key === 'w' || key === 's')
                         || (key === 'ArrowUp' || key === 'ArrowDown')) {
                         // socket.emit('handleKeyEvent', event.key, event.type);
-                        const response = yield fetch('http://localhost:3002/api/game/move', {
+                        const response = yield fetch('http://localhost:3001/api/game/move', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -249,25 +258,40 @@ function initMultiGame(canvas, name) {
             socket.on('gameOver', () => {
                 document.removeEventListener('keydown', handleKeyEvent);
                 document.removeEventListener('keyup', handleKeyEvent);
+                const div = document.createElement('div');
+                div.textContent = 'Game Over';
+                div.className = 'mt-8 text-white rounded text-5xl shadow-lg';
+                container.insertBefore(div, canvas);
             });
         });
     });
 }
-export function getAllScreen(app) {
+export function getAllScreen() {
     console.log('All screen load');
     const container = document.createElement('div');
-    container.className = 'flex flex-col gap-8 p-4 justify-center items-center w-full h-screen relative';
+    container.id = 'pong-game-container';
+    container.className = 'flex flex-col gap-8 p-4 justify-start items-center w-full h-screen relative';
     function msg_box(container, message) {
         console.log(message);
         const div = document.createElement('div');
         div.textContent = message;
-        div.className = 'absolute top-4 left-4';
+        div.className = 'w-full';
         container.appendChild(div);
     }
     ;
     socket.on("connect", () => {
         msg_box(container, `you connected to socket with id: ${socket.id}`);
+        console.log(`you connected id: ${socket.id}`);
     });
+    socket.on('connect_error', (err) => {
+        console.error('connection error :', err.message);
+        msg_box(container, `connection error`);
+    });
+    socket.io.on('reconnect_attempt', () => {
+        console.log('reconnection attempt...');
+        msg_box(container, 'reconnection attempt...');
+    });
+    socket.connect();
     const formlocal = document.createElement('form');
     formlocal.className = 'flex gap-4 justify-center items-center max-w-md max-h-md text-black';
     const input1local = document.createElement('input');
@@ -301,7 +325,6 @@ export function getAllScreen(app) {
     canvas.height = 600;
     canvas.className = 'hidden mx-auto rounded-lg';
     container.appendChild(canvas);
-    //Username validation into game
     formlocal.addEventListener('submit', (e) => {
         e.preventDefault();
         const name1 = input1local.value.trim();
