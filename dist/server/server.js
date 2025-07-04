@@ -3,6 +3,7 @@ import { PongGame } from './game/pong.js';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 const GameRooms = new Map();
+const userSocket = new Map();
 let roomcount = 1;
 let localcount = 1;
 const targetFPS = 30;
@@ -21,6 +22,7 @@ export function initGameServer(httpServer) {
                 io.to(room.id).emit('gameOver');
                 clearInterval(room.intervalID);
                 io.in(room.id).disconnectSockets();
+                // Send GameResult to database
                 GameRooms.delete(room.id);
                 console.log(`server: game ended`);
             }
@@ -30,6 +32,12 @@ export function initGameServer(httpServer) {
         console.log("server: connection ", client_socket.id);
         let room = undefined;
         let playerSide = -1;
+        client_socket.on('userSocketRegistering', (userId) => {
+            var _a;
+            if (!userSocket.has(userId))
+                userSocket.set(userId, { sockets: new Set(), isInGame: false });
+            (_a = userSocket.get(userId)) === null || _a === void 0 ? void 0 : _a.sockets.add(client_socket.id);
+        });
         client_socket.on('joinRoom', (roomId) => {
             room = GameRooms.get(`Game Room ID local ${roomId}`);
             if (!room) {
@@ -92,11 +100,15 @@ export function initGameServer(httpServer) {
                     room.game.handleKeyUp(key, playerSide);
             }); */
         client_socket.on('disconnect', () => {
+            var _a, _b;
             console.log("server: disconnection ", client_socket.id);
             if (room) {
                 room.playercount -= 1;
                 console.log(`server: disconnect client: ${client_socket.id} in room: ${room.index}`);
             }
+            (_a = userSocket.get(userId)) === null || _a === void 0 ? void 0 : _a.sockets.delete(client_socket.id);
+            if (((_b = userSocket.get(userId)) === null || _b === void 0 ? void 0 : _b.sockets.size) === 0)
+                userSocket.delete(userId);
         });
     });
 }

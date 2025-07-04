@@ -6,6 +6,14 @@ import cors from '@fastify/cors'
 
 const GameRooms: Map<string, GameRoom> = new Map();
 
+interface userData
+{
+    sockets: Set<string>;
+    isInGame: boolean;
+}
+
+const userSocket: Map<number, userData> = new Map();
+
 let roomcount: number = 1;
 let localcount: number = 1;
 const targetFPS: number = 30;
@@ -17,6 +25,15 @@ interface GameRoom
     id: string;
     index: number;
     intervalID?: NodeJS.Timeout;
+}
+
+interface GameResult
+{
+    draw: boolean;
+    winner: string; //User  + alias
+    looser: string; //User  + alias
+    scoreWinner: number;
+    scoreLooser: number;
 }
 
 export function initGameServer(httpServer: httpServer)
@@ -40,8 +57,10 @@ function gameLoop(room: GameRoom): void
             io.to(room.id).emit('gameOver');
             clearInterval(room.intervalID);
             io.in(room.id).disconnectSockets();
-            GameRooms.delete(room.id);
 
+            // Send GameResult to database
+
+            GameRooms.delete(room.id);
             console.log(`server: game ended`);
         }
     }, 1000 / targetFPS );
@@ -52,6 +71,14 @@ io.on('connection', client_socket => {
     let room: GameRoom | undefined = undefined;
     let playerSide: number = -1;
     
+    client_socket.on('userSocketRegistering', (userId: number) => {
+
+        if (!userSocket.has(userId))
+            userSocket.set(userId, { sockets: new Set(), isInGame: false});
+
+        userSocket.get(userId)?.sockets.add(client_socket.id);
+    });
+
     client_socket.on('joinRoom', (roomId: number) => {
 
         room = GameRooms.get(`Game Room ID local ${roomId}`);
@@ -135,6 +162,11 @@ io.on('connection', client_socket => {
             room.playercount -= 1;
             console.log(`server: disconnect client: ${client_socket.id} in room: ${room.index}`);
         }
+
+        userSocket.get(userId)?.sockets.delete(client_socket.id);
+        if (userSocket.get(userId)?.sockets.size === 0)
+            userSocket.delete(userId);
+
     });
 });
 

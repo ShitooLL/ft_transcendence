@@ -6,6 +6,8 @@ import type { Socket } from "socket.io-client/build/esm/socket";
 // Declare "io" as a global function returning a Socket instance
 declare const io: (url: string, opts?: any) => Socket;
 
+let userId: number = 3;
+
 const socket = io('http://localhost:3001', {
     autoConnect: false,
 });
@@ -307,6 +309,7 @@ export function getAllScreen(): HTMLElement
     socket.on("connect", () => {
         msg_box(container, `you connected to socket with id: ${socket.id}`);
         console.log(`you connected id: ${socket.id}`);
+        socket.emit('userSocketRegistering', userId);
     });
     socket.on('connect_error', (err: Error) => {
         console.error('connection error :', err.message);

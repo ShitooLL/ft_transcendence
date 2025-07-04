@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { CanvasRenderer } from './render/render2D.js';
+let userId = 3;
 const socket = io('http://localhost:3001', {
     autoConnect: false,
 });
@@ -282,6 +283,7 @@ export function getAllScreen() {
     socket.on("connect", () => {
         msg_box(container, `you connected to socket with id: ${socket.id}`);
         console.log(`you connected id: ${socket.id}`);
+        socket.emit('userSocketRegistering', userId);
     });
     socket.on('connect_error', (err) => {
         console.error('connection error :', err.message);
